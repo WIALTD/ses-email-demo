@@ -9,7 +9,7 @@ This repository demonstrates how **Global Guide Group** migrated its transaction
 - **Security**: IAM policies + Secrets Manager keep credentials safe (no API keys hard-coded).
 - **Future-Proofing**: SES is reusable across projects, reducing reliance on third-party SaaS.
 
-This repo is a **companion** to [GGG Email - SendGrid](https://github.com/YOUR_USERNAME/sendgrid-email-demo), showing how the system evolved.
+This repo is a **companion** to [GGG Email - SendGrid](https://github.com/WIALTD/sendgrid-email-demo), showing how the system evolved.
 
 ## Tech Stack
 
@@ -40,7 +40,7 @@ Example call:
 import { sendSesEmail } from 'backend/sesEmail';
 
 $w.onReady(function () {
-  sendSesEmail("alexander@globalguidegroup.com", "Test Subject", "<p>Hello World</p>", "Hello World")
+  sendSesEmail("hello@globalguidegroup.com", "Test Subject", "<p>Hello World</p>", "Hello World")
     .then(res => console.log(res))
     .catch(err => console.error(err));
 });
