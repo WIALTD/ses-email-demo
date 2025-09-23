@@ -48,6 +48,34 @@ ggg-email-ses/
 ```
 ---
 
+## Assets
+
+This repo includes an `/assets` folder that contains supporting screenshots and configuration examples:  
+
+- **ses-dashboard.png** – AWS SES console showing verified domain + sandbox limits.  
+- **dkim-success.png** – Confirmation of DKIM verification for domain.  
+- **wix-secrets-manager.png** – Wix Secrets Manager setup, demonstrating secure storage of SES keys.  
+
+These are included for **portfolio/visa documentation purposes** to illustrate the real-world configuration steps alongside the code.
+
+## Secrets Manager Setup (Wix)
+
+AWS SES requires an **Access Key ID** and **Secret Access Key** for API calls.  
+For security, these credentials are **never hard-coded** in the project. Instead:  
+
+1. Create two entries in Wix Secrets Manager (`SES_ACCESS_KEY_ID` and `SES_SECRET_ACCESS_KEY`).  
+2. Reference them in backend code using `wix-secrets-backend`.  
+3. This mirrors best practices in production: sensitive credentials live in encrypted storage, not in your repo.  
+
+```js
+import { getSecret } from 'wix-secrets-backend';
+
+export async function sendSesEmail(to, subject, htmlBody, textBody) {
+  const accessKeyId = await getSecret("SES_ACCESS_KEY_ID");
+  const secretAccessKey = await getSecret("SES_SECRET_ACCESS_KEY");
+  // ... SES client logic
+}
+
 ## Usage
 
 1. Copy `.env.example` → `.env` and fill in your SES keys + region.  
