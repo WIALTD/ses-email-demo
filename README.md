@@ -60,6 +60,7 @@ This repo includes an `/assets` folder that contains supporting screenshots and 
 These are included for **portfolio/visa documentation purposes** to illustrate the real-world configuration steps alongside the code.
 
 ## Secrets Manager Setup (Wix)
+![Wix Secrets Manager](assets/wix-secrets-manager.png)
 
 AWS SES requires an **Access Key ID** and **Secret Access Key** for API calls.  
 For security, these credentials are **never hard-coded** in the project. Instead:  
