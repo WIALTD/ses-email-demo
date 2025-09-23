@@ -46,6 +46,7 @@ ggg-email-ses/
 ├── sesEmail.jsw          # Wix backend email sender (SES API)
 └── assets/               # Screenshots of SES + Wix Secrets setup
 ```
+
 ---
 
 ## Assets
@@ -75,6 +76,7 @@ export async function sendSesEmail(to, subject, htmlBody, textBody) {
   const secretAccessKey = await getSecret("SES_SECRET_ACCESS_KEY");
   // ... SES client logic
 }
+```
 
 ## Usage
 
@@ -92,6 +94,7 @@ $w.onReady(function () {
     .then(res => console.log(res))
     .catch(err => console.error(err));
 });
+```
 
 ## License
 
