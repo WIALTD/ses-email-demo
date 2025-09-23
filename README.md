@@ -65,7 +65,7 @@ These are included for **portfolio/visa documentation purposes** to illustrate t
 AWS SES requires an **Access Key ID** and **Secret Access Key** for API calls.  
 For security, these credentials are **never hard-coded** in the project. Instead:  
 
-1. Create two entries in Wix Secrets Manager (`SES_ACCESS_KEY_ID` and `SES_SECRET_ACCESS_KEY`).  
+1. Create three entries in Wix Secrets Manager (`SES_ACCESS_KEY_ID`, `SES_SECRET_ACCESS_KEY`, and`SES_REGION`). 
 2. Reference them in backend code using `wix-secrets-backend`.  
 3. This mirrors best practices in production: sensitive credentials live in encrypted storage, not in your repo.  
 
