@@ -1,0 +1,13 @@
+{
+  "name": "ggg-email-ses",
+  "version": "1.0.0",
+  "description": "Demo project replacing SendGrid with AWS SES for Global Guide Group",
+  "main": "Index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node Index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ses": "^3.600.0"
+  }
+}
