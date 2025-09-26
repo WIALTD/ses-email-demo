@@ -7,7 +7,8 @@
 
 # GGG Email - AWS SES Integration
 
-This repository demonstrates how **Global Guide Group** migrated its transactional email system from **SendGrid** to **Amazon SES (Simple Email Service)**.  
+This repository demonstrates how **Global Guide Group** migrated its transactional email system from **SendGrid** to **Amazon SES (Simple Email Service)**. 
+ 
 This project mirrors the structure of our earlier SendGrid demo but swaps in AWS SES using the official API route.
 
 ## Why the Migration?
@@ -20,6 +21,7 @@ This project mirrors the structure of our earlier SendGrid demo but swaps in AWS
 This repo is a **companion** to [GGG Email - SendGrid](https://github.com/WIALTD/sendgrid-email-demo), showing how the system evolved.
 
 ### AWS SES Dashboard (Verified Domain)
+
 ![SES Dashboard](assets/ses-dashboard.png)
 
 ---
@@ -240,7 +242,7 @@ $w.onReady(function () {
 });
 ```
 
-## Debugging Journey (What We Learned)
+## Debugging Journey
 
 - **  Form vs CMS IDs: Wix form element IDs (#userMessage) ≠ CMS field keys (message). Must align.
 - **  Independent flows: Sending email and saving CMS separately avoids dual failure risk.
@@ -248,6 +250,53 @@ $w.onReady(function () {
 - **  Formatting: Lost custom SendGrid templates, but SES now delivers full text + HTML bodies. Custom html templates can be saved in SES codebase. 
 
 ⸻
+
+## Lessons Learned
+
+This project was not a simple “SES integration.” It became a demonstration of **end-to-end problem solving** and structural architecture strategic decisions.
+
+### 1. Wix vs. AWS Lambda
+
+- **Initial attempt**: Run SES directly in Wix backend using the AWS SDK.  
+- **Problem**: Wix sandboxing + dependency issues made SES calls brittle and hard to debug.  
+- **Solution**: Offloaded SES calls to an AWS Lambda function. Wix simply relays JSON payloads to the Lambda endpoint, which is purpose-built for SES. This separation made the architecture **simpler, more stable, and more maintainable**.
+
+### 2. CORS & Permissions
+
+- Encountered CORS rejections when calling Lambda from Wix.  
+- Fix: Explicitly allow `POST` (and `OPTIONS`) on the Lambda Function URL. Once configured, communication was reliable.  
+- Takeaway: **Infrastructure quirks** (like CORS) can block progress more than code itself.
+
+### 3. Data Mapping & Field Consistency
+
+- Mismatch between **Wix form field IDs** (e.g. `userMessage`) and **CMS collection keys** (e.g. `message`) caused missing values in emails.  
+- Fix: Standardized names across frontend form, dataset, backend, and Lambda templates.  
+- Lesson: **Schema consistency matters** — every layer must agree on field names.
+
+### 4. Templates & Styling
+
+- Original SendGrid setup used hosted templates with styled fonts (Cormorant Garamond).  
+- SES requires building templates manually (HTML + plain text).  
+- For MVP, minimal styling was accepted. But the migration illustrates trade-offs: SES is cheaper and more flexible, but requires more DIY effort compared to SendGrid’s polished tooling.
+
+### 5. Architectural Choice: Independent Workflows
+
+- **Old flow**: Form submit → CMS save → trigger email.  
+- **New flow**: Form submit triggers **two independent actions**:  
+  1. Call Lambda to send SES email immediately.  
+  2. Save to CMS for recordkeeping.  
+- Rationale: **Reduce failure points**. If CMS save fails, email still sends (and vice versa). This separation increases reliability.
+
+### 6. Debugging & Logging
+
+- Extensive use of `console.log` (Wix) and CloudWatch (Lambda) was essential to trace failures.  
+- Key insight: Even with a simple API call, **debugging infrastructure integration requires visibility across all systems**.
+
+---
+
+**Outcome:**  
+
+What started as a frustratingly complex migration ended up being a **portfolio-grade demonstration of real-world problem solving**: working across SaaS limitations, cloud infrastructure, frontend/backend integration, and schema alignment. This journey was documented at least in part to illustrate how you can drive yourself nuts over tiny details if not paying 1000% attention at every moment. Anyways. It works. And it works brilliantly.  
 
 
 ## License
