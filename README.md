@@ -198,7 +198,8 @@ Message: ${message}
   await client.send(command);
   return { statusCode: 200, body: JSON.stringify({ success: true }) };
 };
-``
+
+```
 
 ## Secrets Manager Setup (Wix)
 
@@ -237,6 +238,7 @@ $w.onReady(function () {
     .then(res => console.log(res))
     .catch(err => console.error(err));
 });
+```
 
 ## Debugging Journey (What We Learned)
 
