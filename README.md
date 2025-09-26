@@ -59,7 +59,149 @@ This repo includes an `/assets` folder that contains supporting screenshots and 
 
 These are included for **portfolio/visa documentation purposes** to illustrate the real-world configuration steps alongside the code.
 
+---
+
+## Data Contract
+
+The frontend form, backend proxy, and Lambda **must agree on field names**.  
+After debugging, we standardised the following schema:
+
+| Field             | Form ID        | CMS Key          | Lambda Payload Key |
+|-------------------|----------------|------------------|--------------------|
+| First Name        | `#firstName`   | `firstName`      | `clientName` (part of full name) |
+| Last Name         | `#lastName`    | `lastName`       | `clientName` (part of full name) |
+| Email (Client)    | `#userEmail`   | `email`          | `clientEmail` |
+| Destination Dates | `#destinationDates` | `destinationDates` | `destinationDates` |
+| Message           | `#message`     | `message`        | `message` |
+
+✅ **Lesson learned**: originally, mismatches (`userMessage` vs `message`) caused blank emails. Fixed by aligning names.
+
+---
+## Frontend (Wix Page Code)
+
+Key points:
+- Reads form field values directly (`#firstName`, `#lastName`, etc.)  
+- Calls `sendSesEmail()` **before saving CMS**, so an email is always attempted.  
+- Saves CMS record independently (`GuideMessages` collection) to avoid blocking.  
+- Handles errors gracefully: email failure doesn’t block saving, CMS failure doesn’t block sending.
+
+```js
+import { sendSesEmail } from 'backend/sesEmail.jsw';
+
+export async function button5_click(event) {
+  $w('#button5').disable();
+
+  const firstName = $w('#firstName').value;
+  const lastName = $w('#lastName').value;
+  const clientEmail = $w('#userEmail').value;
+  const destinationDates = $w('#destinationDates').value;
+  const message = $w('#message').value;
+
+  const guide = $w('#dynamicDataset').getCurrentItem();
+  const guideName = guide.title || "Guide";
+  const guideEmail = guide.emailAddress;
+
+  // Send SES email first
+  await sendSesEmail({
+    to: guideEmail,
+    subject: `New Tour Request for ${guideName}`,
+    replyTo: clientEmail,
+    data: { guideName, clientName: `${firstName} ${lastName}`, clientEmail, destinationDates, message }
+  });
+
+  // Save CMS record second
+  $w('#dataset2').setFieldValues({
+    guide: guide._id,
+    guideEmail,
+    firstName,
+    lastName,
+    email: clientEmail,
+    destinationDates,
+    message
+  });
+
+  await $w('#dataset2').save();
+  $w('#button5').enable();
+}
+```
+
+---
+## Backend (Wix JSW)
+
+Acts as a proxy to Lambda.
+Keeps SES logic out of the frontend, protects secrets, and ensures consistent payload formatting.
+
+```js
+
+// backend/sesEmail.jsw
+import { fetch } from 'wix-fetch';
+
+const LAMBDA_URL = "https://xxxxx.lambda-url.us-east-1.on.aws/";
+
+export async function sendSesEmail({ to, subject, data, replyTo }) {
+  const res = await fetch(LAMBDA_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ to, subject, replyTo, ...data }),
+  });
+
+  if (!res.ok) throw new Error(`Lambda returned ${res.status}`);
+  return res.json();
+}
+```
+
+## Lambda (AWS)
+
+- ** Receives payload from Wix backend
+- ** Formats HTML + plain text body
+- ** Sends via AWS SES (verified domain + DKIM configured)
+- ** Supports reply-to client email
+
+```js
+
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+
+export const handler = async (event) => {
+  const { to, subject, replyTo, guideName, clientName, clientEmail, destinationDates, message } = JSON.parse(event.body);
+
+  const client = new SESClient({ region: "us-east-1" });
+
+  const htmlBody = `
+    <h2>New Tour Request for ${guideName}</h2>
+    <p><b>From:</b> ${clientName} (${clientEmail})</p>
+    <p><b>Destination & Dates:</b> ${destinationDates}</p>
+    <p><b>Message:</b><br>${message}</p>
+    <hr/>
+    <small>This request was sent via Global Guide Group.</small>
+  `;
+
+  const textBody = `
+New Tour Request for ${guideName}
+From: ${clientName} (${clientEmail})
+Destination & Dates: ${destinationDates}
+Message: ${message}
+  `;
+
+  const command = new SendEmailCommand({
+    Destination: { ToAddresses: [to] },
+    Message: {
+      Subject: { Data: subject },
+      Body: {
+        Html: { Data: htmlBody },
+        Text: { Data: textBody },
+      },
+    },
+    Source: "hello@globalguidegroup.com",
+    ReplyToAddresses: replyTo ? [replyTo] : [],
+  });
+
+  await client.send(command);
+  return { statusCode: 200, body: JSON.stringify({ success: true }) };
+};
+``
+
 ## Secrets Manager Setup (Wix)
+
 ![Wix Secrets Manager](assets/wix-secrets-manager.png)
 
 AWS SES requires an **Access Key ID** and **Secret Access Key** for API calls.  
@@ -95,7 +237,16 @@ $w.onReady(function () {
     .then(res => console.log(res))
     .catch(err => console.error(err));
 });
-```
+
+## Debugging Journey (What We Learned)
+
+- **  Form vs CMS IDs: Wix form element IDs (#userMessage) ≠ CMS field keys (message). Must align.
+- **  Independent flows: Sending email and saving CMS separately avoids dual failure risk.
+- **  Reply-to field: Confirmed SES supports it; guides can reply directly to clients.
+- **  Formatting: Lost custom SendGrid templates, but SES now delivers full text + HTML bodies. Custom html templates can be saved in SES codebase. 
+
+⸻
+
 
 ## License
 
