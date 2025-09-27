@@ -224,6 +224,34 @@ export async function sendSesEmail(to, subject, htmlBody, textBody) {
 }
 ```
 
+## Frontend Integration (Wix)
+
+Once the backend SES Lambda was working, we connected it to a Wix frontend form.  
+This included:
+
+- Pulling guide data dynamically from the CMS
+- Building a SES payload with client + guide info
+- Saving a record in the `GuideMessages` CMS collection
+- Redirecting users to a `/request-thank-you` page after submit
+- Showing a pulsing "loading overlay" while the CMS save + SES relay happen
+
+### Code Sample (button5_click)
+```js
+// shortened snippet of the Wix frontend button handler
+export async function button5_click() {
+  showLoadingOverlay();
+  try {
+    const result = await sendSesEmail({ ... });
+    await $w('#dataset2').save();
+    wixLocation.to("/request-thank-you");
+  } catch (err) {
+    console.error(err);
+  } finally {
+    hideLoadingOverlay();
+  }
+}
+```
+
 ## Usage
 
 1. Copy `.env.example` → `.env` and fill in your SES keys + region.  
